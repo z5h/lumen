@@ -266,7 +266,11 @@ struct WizardView: View {
             }
 
             if captureMethod == .system {
-                Button(action: enableSystemProxy) {
+                Button(action: {
+                    Task {
+                        await enableSystemProxy()
+                    }
+                }) {
                     HStack(spacing: 6) {
                         if systemProxyBusy {
                             ProgressView().scaleEffect(0.6).frame(width: 12, height: 12)
@@ -443,7 +447,7 @@ struct WizardView: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 9))
                     .foregroundStyle(.white.opacity(0.25))
-                Text("The launchers above handle their own connections — no system proxy or admin password needed. Enable system proxy in Settings only if you want to capture traffic from unconfigured apps.")
+                Text("The launchers above handle their own connections — no system proxy or admin password needed. Enable system proxy in Settings only if you want to capture traffic from uncontrolled apps.")
                     .font(.system(size: 9))
                     .foregroundStyle(.white.opacity(0.3))
             }
@@ -979,14 +983,11 @@ struct WizardView: View {
         }
     }
 
-    private func enableSystemProxy() {
+    @MainActor
+    private func enableSystemProxy() async {
         systemProxyBusy = true
-        Task {
-            let ok = await SystemProxy.enable(port: apiClient.proxyConfig.port)
-            await MainActor.run {
-                systemProxyBusy = false
-                systemProxyDone = ok
-            }
-        }
+        let ok = await SystemProxy.enable(port: apiClient.proxyConfig.port)
+        systemProxyBusy = false
+        systemProxyDone = ok
     }
 }
